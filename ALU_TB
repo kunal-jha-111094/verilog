@@ -1,0 +1,50 @@
+
+module ALU_test;
+ 
+ 
+ 
+  reg  [15:0] din1, din2;
+  wire signed [15:0] dout;
+  logic [2:0] aluop;
+  
+  // Named port mapping for clarity
+  ALU DUT (
+    .out(dout),
+    .in1(din1),
+    .in2(din2),
+    .aluop(aluop)
+  );
+  
+  initial begin
+    // Initialize inputs at time 0
+    din1  = 0;
+    din2  = 0;
+    aluop = 3'b000;
+
+    #5  din1 = 9;       // Set first operand
+    #5  din2 = 5;       // Set second operand
+    #5  aluop = 3'b000; // ADD
+    #1  $display($time, " ADD: out = %d", dout);
+
+    #5  aluop = 3'b001; // SUB
+    #1  $display($time, " SUB: out = %d", dout);
+
+    #5  aluop = 3'b100; // MUL
+    #1  $display($time, " MUL: out = %d", dout);
+
+    #5  aluop = 3'b101; // NOT
+    #1  $display($time, " NOT: out = %d", dout);
+
+    #10 $finish;
+  end
+  
+  initial begin
+    $dumpfile("ALU_Datapath.vcd");
+    $dumpvars(0, ALU_test);
+  end
+endmodule
+
+  
+  
+ 
+
