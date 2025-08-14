@@ -1,0 +1,27 @@
+
+module ALU (out,in1, in2, aluop);
+  
+  input logic [15:0] in1,in2;
+  output reg signed  [15:0]out;
+  input wire [2:0] aluop;
+  
+   parameter ADD = 3'b000 , SUB = 3'b001 , AND = 3'b010 , OR = 3'b011 , MUL = 3'b100 , NOT = 3'b101;
+  
+  
+  
+  always @(*)
+    begin
+      case(aluop)
+    
+    ADD : out = in1 + in2;
+    SUB : out = in1 - in2;
+    AND : out = in1 & in2;
+    OR :  out = in1 | in2;
+    MUL : out = in1 * in2;
+    NOT : out = ~in1;
+ endcase
+  end
+      endmodule
+                                                               
+                                                               
+
