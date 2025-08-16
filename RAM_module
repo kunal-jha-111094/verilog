@@ -1,0 +1,32 @@
+module RAM (input reg [15:0] data_in,
+            input reg [4:0] addr_in,
+            input wire wr_en ,rd_en ,clk, rst, 
+            output reg [15:0] data_out);
+  
+  logic [15:0] Reg [15:0];
+  
+  
+  initial begin
+    
+     data_out = 0;
+    
+    for (int i = 0; i < 16 ; i++)
+      Reg[i] = i;
+        
+  end
+  
+  always @(posedge clk)
+begin    
+  if(!rst)
+       data_out <= 0;
+  else
+    if(wr_en)
+      Reg[addr_in] <= data_in;
+  
+  else if(rd_en)
+      data_out <= Reg[addr_in];
+  
+end
+  
+endmodule
+      
