@@ -19,19 +19,16 @@ module RAM (input reg [15:0] data_in,
   always @(posedge clk)
 begin  
   
-  if(!rst) begin
+  if(!rst) 
        data_out <= 0;
-  end  
-    
-     
+      
     
  else  if (wr_en)
       Reg[addr_in] <= data_in;
   
-  else if (rd_en)
+  else  (rd_en)
       data_out <= Reg[addr_in];
-  else 
-      data_out <= 0;
+ 
 
 end
 
