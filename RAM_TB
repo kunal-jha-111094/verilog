@@ -3,7 +3,8 @@ module Ram_test;
   logic [15:0] data_in;
   logic [15:0] data_out;
   logic wr_en,rd_en,clk,rst;
-  logic [4:0]addr_in;
+  logic [3:0]addr_in;
+  logic [15:0] read_data;
   
   RAM DUT(.data_in(data_in),.addr_in(addr_in),.wr_en(wr_en),.rd_en(rd_en),.clk(clk),.rst(rst),.data_out(data_out));
   
@@ -14,45 +15,65 @@ module Ram_test;
     clk = 0;
     rst = 0;
     
+    #5rst <= 1;
+    
   end
+  
   always #5 clk = ~clk;
   
   initial begin
+  wr_en   = 0;
+  rd_en   = 0;
+  addr_in = 0;
+  data_in = 0;
+
+  // Wait for reset deassert
+  @(posedge clk);
+  rst <= 1;
+
+  // Perform writes and reads
+  write(3, 16'h000A);
+  write(4, 16'h000C);
+  read(3, read_data);
+  read(4, read_data);
+
+  #50 $finish;
+end
+
   
+ task write(input [3:0] addr, input [15:0] data);
+  @(posedge clk);
+    addr_in <= addr;
+    data_in <= data;
+    wr_en   <= 1;
+  @(posedge clk);
+    wr_en   <= 0;
+endtask
+
+
+task read(input [3:0] addr, output [15:0] dout);
+  @(posedge clk);
+    addr_in <= addr;
+    rd_en   <= 1;
+  @(posedge clk);
+    rd_en   <= 0;
+    dout    = data_out;   // sample AFTER rd_en went high
+    $display("Time=%0t Read from addr %0d = %0h", $time, addr, dout);
+endtask
+
+  
+    assert property (@(posedge clk) !(wr_en && rd_en))
+      else $error("Error: wr_en %0d and rd_en %0d cannot be equal at same time %0t", wr_en, rd_en,$time);
     
-    wr_en = 0;
-    rd_en = 0;
-    addr_in = 0;
-    data_in = 0;
+      assert property (@(posedge clk) !rst |-> (data_out == 0))
+        else $error ("Error: data_out %0d is not reset properly",data_out,$time);
+        
+        assert property (@(posedge clk) addr_in inside {[0:15]})
+          else $error ("Error: addr_in %0d is not in range",addr_in,$time);
   
-  
-  @(posedge clk);
-  #5 rst <= 1;
-  
-  #2 wr_en <= 1;
-  #10 data_in <= 10;
-  #10 addr_in <= 3;
-  @(posedge clk);
-  #5 wr_en <= 0;
-  
-  
-  @(posedge clk);
-  #5 rd_en <= 1;
-  #10 addr_in <= 2;
-  @(posedge clk);
-  #10 rd_en <= 0;
-  
-  @(posedge clk);
-  #5 wr_en <= 1;
-  #10 data_in <= 10;
-  #10 addr_in <= 1;
-  @(posedge clk);
-  #5 wr_en <= 0;
-  
-  #200 $finish();
+ 
   
 
-  end 
     initial begin
     
     
