@@ -25,7 +25,7 @@ begin
     
      
     
-   if (wr_en)
+ else  if (wr_en)
       Reg[addr_in] <= data_in;
   
   else if (rd_en)
