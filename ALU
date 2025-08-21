@@ -2,10 +2,10 @@
 module ALU (out,in1, in2, aluop);
   
   input logic [15:0] in1,in2;
-  output reg signed  [15:0]out;
+  output reg signed  [16:0]out; // 17 bit 1 extra bit for carry
   input wire [2:0] aluop;
   
-   parameter ADD = 3'b000 , SUB = 3'b001 , AND = 3'b010 , OR = 3'b011 , MUL = 3'b100 , NOT = 3'b101;
+   parameter ADD = 3'b000 , SUB = 3'b001 , AND = 3'b010 , OR = 3'b011 , MUL = 3'b100 , NOT = 3'b101;  /// aluop values fom 0 - 8
   
   
   
