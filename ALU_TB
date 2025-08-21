@@ -4,7 +4,7 @@ module ALU_test;
  
  
   reg  [15:0] din1, din2;
-  wire signed [15:0] dout;
+  wire signed [16:0] dout;
   logic [2:0] aluop;
   
   // Named port mapping for clarity
