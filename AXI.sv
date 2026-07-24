@@ -472,9 +472,9 @@ module AXI_RAM( input clk,rst,
             dout <= 0;
         else
               if(wenb)
-           datain <=  mem[addr];
+                mem[addr] <= datain;
               if(rdenb)
-              mem[addr] <= dout;    
+                dout <= mem[addr];    
      
       end
 endmodule
