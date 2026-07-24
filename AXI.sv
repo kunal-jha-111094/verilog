@@ -26,8 +26,8 @@ module tb_axi_lite_ram;
 
     // --------------------------------------------------
     // Parameters
-    // --------------------------------------------------
-    localparam DATA_WIDTH = 8;
+    // ---------------------32----------------------------
+    localparam DATA_WIDTH = 32;
     localparam ADDR_WIDTH = 10;
 
     // --------------------------------------------------
@@ -75,16 +75,16 @@ module tb_axi_lite_ram;
     // DUT Instantiation
     // --------------------------------------------------
     AXI_Slave dut (
-        .s_axi_aclk           (aclk),
+        .s_axi_clk           (aclk),
         .s_axi_resetn        (aresetn),
 
         .s_axi_awaddr   (s_axi_awaddr),
-        .s_axi_awprot   (s_axi_awprot),
+        //.s_axi_awprot   (s_axi_awprot),
         .s_axi_awvalid  (s_axi_awvalid),
         .s_axi_awready  (s_axi_awready),
 
         .s_axi_wdata    (s_axi_wdata),
-        .s_axi_wstrb    (s_axi_wstrb),
+        //.s_axi_wstrb    (s_axi_wstrb),
         .s_axi_wvalid   (s_axi_wvalid),
         .s_axi_wready   (s_axi_wready),
 
@@ -93,7 +93,7 @@ module tb_axi_lite_ram;
         .s_axi_bready   (s_axi_bready),
 
         .s_axi_araddr   (s_axi_araddr),
-        .s_axi_arprot   (s_axi_arprot),
+        //.s_axi_arprot   (s_axi_arprot),
         .s_axi_arvalid  (s_axi_arvalid),
         .s_axi_arready  (s_axi_arready),
 
@@ -123,12 +123,14 @@ module tb_axi_lite_ram;
         s_axi_wvalid <= 1'b1;
 
         wait (s_axi_wready);
+        
+        // Write response
+        wait (s_axi_bvalid);
+        s_axi_bready <= 1'b1;
         @(posedge aclk);
         s_axi_wvalid <= 1'b0;
 
-        // Write response
-        s_axi_bready <= 1'b1;
-        wait (s_axi_bvalid);
+        
         @(posedge aclk);
         s_axi_bready <= 1'b0;
 
@@ -146,18 +148,15 @@ module tb_axi_lite_ram;
         @(posedge aclk);
         s_axi_araddr  <= addr;
         s_axi_arvalid <= 1'b1;
-
+//$display("[READ ] Addr = %0h Data = %0h", addr, data);
         wait (s_axi_arready);
         @(posedge aclk);
-        s_axi_arvalid <= 1'b0;
-
-        // Read data
         s_axi_rready <= 1'b1;
         wait (s_axi_rvalid);
         data = s_axi_rdata;
         @(posedge aclk);
         s_axi_rready <= 1'b0;
-
+        
         $display("[READ ] Addr = %0h Data = %0h", addr, data);
     end
     endtask
@@ -170,7 +169,7 @@ module tb_axi_lite_ram;
     initial begin
         // Init
         aclk = 0;
-        aresetn = 1;
+        aresetn = 0;
 
         s_axi_awvalid = 0;
         s_axi_wvalid  = 0;
@@ -183,7 +182,7 @@ module tb_axi_lite_ram;
 
         // Reset
         repeat (5) @(posedge aclk);
-        aresetn = 0;
+        aresetn = 1;
 
         // --------------------------------------------------
         // Test cases
@@ -203,16 +202,20 @@ module tb_axi_lite_ram;
         $display("TEST PASSED");
     
   $dumpfile("dump.vcd");
-  $dumpvars(0, tb);   // tb = name of your top testbench module
+      $dumpvars(1, tb_axi_lite_ram);   // tb = name of your1top testbench module
 
-        $finish;
+      #100 
+      $finish();
       
     end
 
 endmodule
 
 
+
 `timescale 1ns / 1ps
+
+`include "AXI_RAM.sv"
 
 module AXI_Slave( input wire s_axi_clk, s_axi_resetn,
                   input wire s_axi_awid, s_axi_awvalid,
@@ -224,7 +227,7 @@ module AXI_Slave( input wire s_axi_clk, s_axi_resetn,
                   
                   /////////write data channel
                   
-                  input wire [7:0] s_axi_wdata,
+                 input wire [31:0] s_axi_wdata,
                   input wire     s_axi_wvalid,
                   input wire [1:0] s_axi_wstb,
                   input wire     s_axi_wlast,
@@ -251,7 +254,7 @@ module AXI_Slave( input wire s_axi_clk, s_axi_resetn,
                   //////read data channel
                   
                   output reg s_axi_rid,
-                  output reg [7:0] s_axi_rdata,
+                 output reg [31:0] s_axi_rdata,
                   output reg s_axi_rvalid,                  
                   input wire s_axi_rready,
                   output reg [1:0] s_axi_rresp,
@@ -288,72 +291,36 @@ module AXI_Slave( input wire s_axi_clk, s_axi_resetn,
              wr_addr_reg <= 10'b0;
              write_state <= IDLE;
         end  else 
-          
+            
              case(write_state)
                   
-                  IDLE: begin s_axi_awready <= 1'b1;
-                              if(s_axi_awvalid && s_axi_awready)
+                  IDLE: begin     wr_enb <= 1'b1;
+                                 
+                              if(s_axi_awvalid)
                               begin
                                      wr_addr_reg <= s_axi_awaddr;
-                                     s_axi_awready <= 1'b0;
-                                     s_axi_wready <= 1'b1;
+                                      s_axi_awready <= 1'b1;
+                                      s_axi_wready <= 1'b1;
                                      write_state <= write;
                                    end  
                   end
                   
-                  write: begin  if(s_axi_wvalid && s_axi_wready)
-                                wr_enb <= 1'b1;
-                                s_axi_wready <= 0;
+                  write: begin  if(s_axi_wvalid )
+                                
+                                ram_wr_data <= s_axi_wdata;
                                 write_state <= resp;
                   end
                   
-                  resp: begin if(s_axi_bvalid && s_axi_bready)
+               resp: begin if(s_axi_wvalid && s_axi_wready) begin
+                                s_axi_bvalid <= 1'b1;
                                 write_state <= IDLE;
+               end
                   end
                   default : write_state <= IDLE;
                   endcase
     end
     
-    /////////////////// write data channel
-    
-    
-    always @(posedge s_axi_clk)
-    begin
-             if(!s_axi_resetn) begin
-                  s_axi_wready <= 1'b0;      
-                  ram_wr_data <= 7'b0;
-     end
-              else
-                             if(write_state == write)
-                              s_axi_wready <= 1'b1;
-                              if(s_axi_wvalid && s_axi_wready)
-                             begin
-                             wr_enb <= 1'b1;
-                             ram_addr <= wr_addr_reg;
-                             ram_wr_data <= s_axi_wdata;
-                             
-                             end 
-                             else if(s_axi_wready)
-                              s_axi_wready <= 1'b0;
-                              
-    end
-  
-  
-  /////////////// write response channel
-  
-  always @(posedge s_axi_clk)
-  begin
-    if(!s_axi_resetn)
-    begin
-                      s_axi_bvalid <= 1'b0;
-                      s_axi_bresp <= resp_okay;
-                end else
-                   if(write_state == resp && !s_axi_bvalid)
-                       s_axi_bvalid <= 1'b1;  
-                       
-                       else if (s_axi_bvalid && s_axi_bready)
-                                 s_axi_bvalid <= 1'b0;
-                       end
+
    
    //////////// read address channel
    
@@ -368,7 +335,8 @@ module AXI_Slave( input wire s_axi_clk, s_axi_resetn,
               else
                      case(read_state)
                      
-                     IDLE:begin s_axi_arready <= 1'b1;
+                     IDLE:begin    wr_enb <= 1'b0;
+                                   s_axi_arready <= 1'b1;
                                 
                                 if(s_axi_arready && s_axi_arvalid)
                                   begin 
@@ -377,62 +345,25 @@ module AXI_Slave( input wire s_axi_clk, s_axi_resetn,
                                     read_state <= read;
                                     end
                                     end
-                    read: begin if(s_axi_arvalid && !s_axi_arready)
-                              s_axi_arready <= 1'b0;
+                    read: begin if(s_axi_arvalid && s_axi_arready)
+                              s_axi_rvalid <= 1'b1;
+                               s_axi_rdata <= ram_rdata;    
+                              
                               wr_enb <= 0;  
                               read_state <= resp;   
                     end
                     
-                    resp: if(s_axi_rvalid && s_axi_rready)
+                       resp: begin if(s_axi_rvalid && s_axi_rready) begin
+                                s_axi_rvalid <= 1'b0;
+                                  s_axi_arready <= 1'b0;
                                 read_state <= IDLE;
-                    
+                       end
+                       end
                    default: read_state <= IDLE;
                 endcase    
              end  
              
-             
-             /////////////// read data channel
-             
-             always@ (posedge s_axi_clk)
-             begin
-                    if(!s_axi_resetn)
-                            ram_addr <= 10'b0;
-              if(s_axi_rvalid && s_axi_rready)
-                             ram_addr <= s_axi_araddr;
-             else if(!wr_enb && read_state == IDLE)
-                             ram_addr <= rd_addr_reg; 
-             end
-             
-             
-             ///////////// read response channel
-             
-             always @(posedge s_axi_clk)
-             begin
-                if(!s_axi_resetn)
-                begin
-                     s_axi_rvalid <= 1'b0;
-                     s_axi_rresp <= resp_okay;
-                     s_axi_rdata <= 7'b0;
-                     
-                 end
-                              
-                     if(read_state == resp && !s_axi_rvalid)
-                          begin
-                             s_axi_rvalid <= 1'b1;
-                             
-                             s_axi_rdata <= ram_rdata;    
-                             s_axi_rresp <= resp_okay;
-                    end
-                    
-                     else if (s_axi_rvalid && s_axi_rready)
-                                s_axi_rvalid <= 1'b0;
-                                
-                                end
-                                
-                               // assign wr_enb = s_axi_awvalid && s_axi_awready && s_axi_wvalid && s_axi_wready;
 endmodule
-
-
 
 
 `timescale 1ns / 1ps
